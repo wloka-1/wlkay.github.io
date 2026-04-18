@@ -1,0 +1,13 @@
+name = "baby-tracker"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Fill in database_id after running: wrangler d1 create baby-tracker
+[[d1_databases]]
+binding = "DB"
+database_name = "baby-tracker"
+database_id = "REPLACE_WITH_DATABASE_ID"
+
+# Secrets (set via `wrangler secret put <NAME>`):
+#   SHARED_TOKEN       — random 32-byte hex, shared with each parent's Shortcut
+#   ANTHROPIC_API_KEY  — for Claude Haiku NLP parsing
