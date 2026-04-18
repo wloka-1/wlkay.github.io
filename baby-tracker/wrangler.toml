@@ -6,7 +6,7 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "baby-tracker"
-database_id = "REPLACE_WITH_DATABASE_ID"
+database_id = "255382b3-ba4a-47ae-aa77-caca68601c44"
 
 # Secrets (set via `wrangler secret put <NAME>`):
 #   SHARED_TOKEN       — random 32-byte hex, shared with each parent's Shortcut
