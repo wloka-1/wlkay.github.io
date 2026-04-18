@@ -1,0 +1,45 @@
+name: Deploy baby-tracker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'baby-tracker/**'
+      - '.github/workflows/deploy-baby-tracker.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: baby-tracker
+        run: npm install
+
+      - name: Apply D1 schema
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: baby-tracker
+          command: d1 execute baby-tracker --file=./schema.sql --remote
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: baby-tracker
+          command: deploy
+          secrets: |
+            SHARED_TOKEN
+            ANTHROPIC_API_KEY
+        env:
+          SHARED_TOKEN: ${{ secrets.SHARED_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
