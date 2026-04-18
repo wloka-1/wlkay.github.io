@@ -2,7 +2,7 @@ name: Deploy baby-tracker
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'baby-tracker/**'
       - '.github/workflows/deploy-baby-tracker.yml'
