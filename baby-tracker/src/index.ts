@@ -15,6 +15,7 @@ import {
   type Parsed,
 } from "./parse";
 import { DASHBOARD_HTML } from "./dashboard";
+import { generateShortcutPlist } from "./shortcut";
 
 export interface Env {
   DB: D1Database;
@@ -163,6 +164,21 @@ export default {
     if (url.pathname === "/" || url.pathname === "/dashboard") {
       return new Response(DASHBOARD_HTML, {
         headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    if (url.pathname === "/shortcut") {
+      const t = url.searchParams.get("t");
+      if (!t || t !== env.SHARED_TOKEN) {
+        return json({ ok: false, error: "unauthorized" }, 401);
+      }
+      const logUrl = `${url.origin}/log`;
+      const plist = generateShortcutPlist(logUrl, env.SHARED_TOKEN);
+      return new Response(plist, {
+        headers: {
+          "content-type": "application/x-plist",
+          "content-disposition": 'attachment; filename="Log baby.shortcut"',
+        },
       });
     }
 
