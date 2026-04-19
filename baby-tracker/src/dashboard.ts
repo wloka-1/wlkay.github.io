@@ -192,6 +192,9 @@ async function load() {
     '<div class="total"><div class="num">' + (sleepMs ? fmtDur(sleepMs) : "0m") + '</div><div class="label">sleep</div></div>' +
     '</div>';
 
+  const shortcutUrl = "/shortcut?t=" + encodeURIComponent(token);
+  html += '<div style="text-align:center;margin-bottom:16px;font-size:13px;"><a href="' + shortcutUrl + '" style="color:var(--accent)">\u{1F4F2} install iOS shortcut</a></div>';
+
   const openEvent = events.find(e => e.end_ts === null);
   if (openEvent) {
     html += '<div class="in-progress"><div>' + labelFor(openEvent) + ' \u00b7 started ' + fmtTime(openEvent.start_ts) + '</div>' +
