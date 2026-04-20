@@ -468,7 +468,15 @@ function renderCalendar() {
         html += '<div class="cal-dot ' + cls + '" style="left:' + leftPct + '%" onclick="openEdit(' + ev.id + ')"></div>';
       } else {
         const openCls = ev.end_ts === null ? " open" : "";
-        html += '<div class="cal-block ' + ev.kind + openCls + '" style="left:' + leftPct + '%;width:' + Math.max(widthPct, 0.3) + '%" onclick="openEdit(' + ev.id + ')"></div>';
+        let heightStyle = "";
+        if (ev.kind === "feed") {
+          const durMin = (end - start) / 60000;
+          const ratio = Math.min(durMin / 30, 1);
+          const maxH = 26;
+          const h = Math.max(ratio * maxH, 4);
+          heightStyle = ";top:" + (40 - h) + "px;bottom:4px";
+        }
+        html += '<div class="cal-block ' + ev.kind + openCls + '" style="left:' + leftPct + '%;width:' + Math.max(widthPct, 0.3) + '%' + heightStyle + '" onclick="openEdit(' + ev.id + ')"></div>';
       }
     }
     html += '</div></div>';
