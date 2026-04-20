@@ -43,16 +43,6 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .refresh { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; }
   main { padding: 0 16px 80px; max-width: 560px; margin: 0 auto; }
 
-  .totals {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
-  }
-  .total {
-    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px; text-align: center;
-  }
-  .total .num { font-size: 22px; font-weight: 600; }
-  .total .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-
   .text-input {
     display: flex; gap: 8px; margin-bottom: 6px;
   }
@@ -66,13 +56,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   }
   .hint { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 16px; }
 
-  .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px;
-    font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 10;
-    max-width: calc(100vw - 32px); text-align: center;
+  .totals {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
   }
-  .toast.show { opacity: 0.92; }
+  .total {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px; text-align: center;
+  }
+  .total .num { font-size: 22px; font-weight: 600; }
+  .total .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
   .in-progress {
     background: var(--open); color: #fff; padding: 12px 16px; border-radius: 10px;
@@ -83,6 +75,16 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer;
   }
 
+  .view-toggle {
+    display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; margin-bottom: 12px;
+  }
+  .view-toggle button {
+    flex: 1; background: none; border: none; color: var(--muted);
+    padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  .view-toggle button.active { background: var(--accent); color: #fff; }
+
   .day-header {
     font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
     margin: 16px 0 8px; font-weight: 600;
@@ -90,7 +92,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .event {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
     padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
   }
+  .event:active { background: var(--border); }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .dot.pee { background: var(--pee); }
   .dot.poop { background: var(--poop); }
@@ -101,11 +105,67 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .event .label { flex: 1; font-size: 15px; }
   .event .time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
   .event .dur { color: var(--muted); font-size: 12px; margin-left: 8px; }
-  .event button.del {
-    background: none; border: none; color: var(--muted); font-size: 16px;
-    padding: 0 4px; cursor: pointer; opacity: 0.4;
+
+  .cal-day { margin-bottom: 18px; }
+  .cal-day-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .cal-track {
+    position: relative; height: 44px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden;
   }
-  .event button.del:hover { opacity: 1; color: var(--open); }
+  .cal-hour {
+    position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border);
+  }
+  .cal-hour-label {
+    position: absolute; top: 2px; font-size: 9px; color: var(--muted); transform: translateX(-50%);
+  }
+  .cal-block {
+    position: absolute; top: 14px; bottom: 4px; border-radius: 3px; min-width: 2px;
+    cursor: pointer;
+  }
+  .cal-block.feed { background: var(--feed); }
+  .cal-block.sleep { background: var(--sleep); }
+  .cal-block.feed.open, .cal-block.sleep.open { opacity: 0.5; }
+  .cal-dot {
+    position: absolute; top: 18px; width: 9px; height: 9px; border-radius: 50%;
+    transform: translateX(-50%); cursor: pointer; border: 1px solid var(--card);
+  }
+  .cal-dot.pee { background: var(--pee); }
+  .cal-dot.poop { background: var(--poop); }
+  .cal-dot.both { background: var(--both); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 20;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    width: calc(100% - 32px); max-width: 400px;
+  }
+  .modal h2 { margin: 0 0 16px; font-size: 18px; }
+  .modal-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .modal-row label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .modal-row input, .modal-row select {
+    padding: 10px; font-size: 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--ink); width: 100%;
+  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions button {
+    flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600;
+    font-size: 15px; cursor: pointer;
+  }
+  .btn-save { background: var(--accent); color: #fff; }
+  .btn-cancel { background: var(--border); color: var(--ink); }
+  .btn-delete { background: var(--open); color: #fff; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 30;
+    max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 0.92; }
 
   .empty { color: var(--muted); text-align: center; padding: 40px 16px; }
   .token-prompt {
@@ -127,16 +187,27 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   <h1>Baby</h1>
   <button class="refresh" onclick="load()">refresh</button>
 </header>
-<main id="main">
-  <div class="empty">loading\u2026</div>
+<main>
+  <div id="shell"></div>
 </main>
+<div id="modal" class="modal-backdrop" onclick="if(event.target===this)closeModal()"></div>
 <div id="toast" class="toast"></div>
 <script>
 const TOKEN_KEY = "baby-tracker-token";
 let token = localStorage.getItem(TOKEN_KEY) || "";
+let currentView = localStorage.getItem("baby-view") || "list";
+let currentEvents = [];
+
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 2400);
+}
 
 function promptToken() {
-  document.getElementById("main").innerHTML =
+  document.getElementById("shell").innerHTML =
     '<div class="token-prompt"><div style="margin-bottom:10px">Enter family token:</div>' +
     '<input id="tok" type="password" autocomplete="off"><button onclick="saveToken()">save</button></div>';
 }
@@ -145,7 +216,38 @@ function saveToken() {
   if (!val) return;
   token = val;
   localStorage.setItem(TOKEN_KEY, val);
+  renderShell();
   load();
+}
+
+function renderShell() {
+  document.getElementById("shell").innerHTML = \`
+    <div class="text-input">
+      <input id="freetext" type="text" placeholder="type or dictate, e.g. 'she just pooped'"
+             autocomplete="off" autocapitalize="none">
+      <button onclick="submitText()">log</button>
+    </div>
+    <div class="hint">tap the \u{1F3A4} mic key on your keyboard to dictate</div>
+    <div id="in-progress-container"></div>
+    <div id="totals-container"></div>
+    <div class="view-toggle">
+      <button id="v-list" onclick="setView('list')">list</button>
+      <button id="v-cal" onclick="setView('calendar')">calendar</button>
+    </div>
+    <div id="events-container"></div>
+  \`;
+  document.getElementById("freetext").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitText();
+  });
+  document.getElementById("v-" + (currentView === "calendar" ? "cal" : "list")).classList.add("active");
+}
+
+function setView(v) {
+  currentView = v;
+  localStorage.setItem("baby-view", v);
+  document.getElementById("v-list").classList.toggle("active", v === "list");
+  document.getElementById("v-cal").classList.toggle("active", v === "calendar");
+  renderEvents();
 }
 
 function fmtTime(ts) {
@@ -164,6 +266,20 @@ function dayKey(ts) {
 function isToday(ts) {
   const d = new Date(ts), now = new Date();
   return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+function startOfDay(ts) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function tsToLocalInput(ts) {
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+    "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+function localInputToTs(str) {
+  return new Date(str).getTime();
 }
 
 function labelFor(ev) {
@@ -186,14 +302,6 @@ async function api(path, opts) {
   return res;
 }
 
-function showToast(msg) {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove("show"), 2400);
-}
-
 async function submitText() {
   const input = document.getElementById("freetext");
   if (!input) return;
@@ -211,17 +319,20 @@ async function submitText() {
 
 async function load() {
   if (!token) { promptToken(); return; }
-  let events;
   try {
     const r = await api("/api/events");
     if (!r.ok) throw new Error("load failed");
-    events = (await r.json()).events;
+    currentEvents = (await r.json()).events;
   } catch (e) {
-    document.getElementById("main").innerHTML = '<div class="empty">error: ' + e.message + '</div>';
+    document.getElementById("events-container").innerHTML = '<div class="empty">error: ' + e.message + '</div>';
     return;
   }
+  renderTotalsAndBanner();
+  renderEvents();
+}
 
-  const todays = events.filter(e => isToday(e.start_ts));
+function renderTotalsAndBanner() {
+  const todays = currentEvents.filter(e => isToday(e.start_ts));
   const feedCount = todays.filter(e => e.kind === "feed").length;
   const feedOz = todays
     .filter(e => e.kind === "feed")
@@ -231,65 +342,192 @@ async function load() {
     .filter(e => e.kind === "sleep" && e.end_ts)
     .reduce((s, e) => s + (e.end_ts - e.start_ts), 0);
 
-  let html = '<div class="text-input">' +
-    '<input id="freetext" type="text" placeholder="type or dictate, e.g. \\'she just pooped\\'" ' +
-    'autocomplete="off" autocapitalize="none" onkeydown="if(event.key===\\'Enter\\')submitText()">' +
-    '<button onclick="submitText()">log</button></div>' +
-    '<div class="hint">tap the \u{1F3A4} mic key on your keyboard to dictate</div>';
-
-  html += '<div class="totals">' +
+  document.getElementById("totals-container").innerHTML = '<div class="totals">' +
     '<div class="total"><div class="num">' + feedCount + '</div><div class="label">feeds' + (feedOz ? ' \u00b7 ' + feedOz + 'oz' : '') + '</div></div>' +
     '<div class="total"><div class="num">' + diaperCount + '</div><div class="label">diapers</div></div>' +
     '<div class="total"><div class="num">' + (sleepMs ? fmtDur(sleepMs) : "0m") + '</div><div class="label">sleep</div></div>' +
     '</div>';
 
-  const openEvent = events.find(e => e.end_ts === null);
+  const openEvent = currentEvents.find(e => e.end_ts === null);
+  const banner = document.getElementById("in-progress-container");
   if (openEvent) {
-    html += '<div class="in-progress"><div>' + labelFor(openEvent) + ' \u00b7 started ' + fmtTime(openEvent.start_ts) + '</div>' +
+    banner.innerHTML = '<div class="in-progress"><div>' + labelFor(openEvent) + ' \u00b7 started ' + fmtTime(openEvent.start_ts) + '</div>' +
       '<button onclick="endEvent(' + openEvent.id + ')">End</button></div>';
-  }
-
-  if (events.length === 0) {
-    html += '<div class="empty">no events yet</div>';
   } else {
-    let currentDay = "";
-    for (const ev of events) {
-      const k = dayKey(ev.start_ts);
-      if (k !== currentDay) {
-        html += '<div class="day-header">' + (isToday(ev.start_ts) ? "Today" : k) + '</div>';
-        currentDay = k;
-      }
-      const d = ev.details ? JSON.parse(ev.details) : {};
-      const dotClass = ev.kind === "diaper" ? (d.diaper_type || "pee") : ev.kind;
-      const openClass = ev.end_ts === null ? " open" : "";
-      const dur = ev.end_ts ? '<span class="dur">' + fmtDur(ev.end_ts - ev.start_ts) + '</span>' : '';
-      html += '<div class="event">' +
-        '<div class="dot ' + dotClass + openClass + '"></div>' +
-        '<div class="label">' + labelFor(ev) + dur + '</div>' +
-        '<div class="time">' + fmtTime(ev.start_ts) + '</div>' +
-        '<button class="del" onclick="deleteEvent(' + ev.id + ')" title="delete">\u00d7</button>' +
-        '</div>';
-    }
+    banner.innerHTML = "";
   }
-  document.getElementById("main").innerHTML = html;
+}
+
+function renderEvents() {
+  const container = document.getElementById("events-container");
+  if (!container) return;
+  if (currentEvents.length === 0) {
+    container.innerHTML = '<div class="empty">no events yet</div>';
+    return;
+  }
+  if (currentView === "calendar") {
+    container.innerHTML = renderCalendar();
+  } else {
+    container.innerHTML = renderList();
+  }
+}
+
+function renderList() {
+  let html = '';
+  let currentDay = '';
+  for (const ev of currentEvents) {
+    const k = dayKey(ev.start_ts);
+    if (k !== currentDay) {
+      html += '<div class="day-header">' + (isToday(ev.start_ts) ? "Today" : k) + '</div>';
+      currentDay = k;
+    }
+    const d = ev.details ? JSON.parse(ev.details) : {};
+    const dotClass = ev.kind === "diaper" ? (d.diaper_type || "pee") : ev.kind;
+    const openClass = ev.end_ts === null ? " open" : "";
+    const dur = ev.end_ts ? '<span class="dur">' + fmtDur(ev.end_ts - ev.start_ts) + '</span>' : '';
+    html += '<div class="event" onclick="openEdit(' + ev.id + ')">' +
+      '<div class="dot ' + dotClass + openClass + '"></div>' +
+      '<div class="label">' + labelFor(ev) + dur + '</div>' +
+      '<div class="time">' + fmtTime(ev.start_ts) + '</div>' +
+      '</div>';
+  }
+  return html;
+}
+
+function renderCalendar() {
+  const days = {};
+  for (const ev of currentEvents) {
+    const key = startOfDay(ev.start_ts);
+    if (!days[key]) days[key] = [];
+    days[key].push(ev);
+  }
+  const sortedKeys = Object.keys(days).sort((a, b) => b - a);
+  let html = '';
+  for (const key of sortedKeys) {
+    const dayStart = parseInt(key, 10);
+    const dayEnd = dayStart + 86400000;
+    const label = isToday(dayStart) ? "Today" : dayKey(dayStart);
+    html += '<div class="cal-day"><div class="cal-day-label">' + label + '</div>';
+    html += '<div class="cal-track">';
+    for (let h = 0; h <= 24; h += 6) {
+      const pct = (h / 24) * 100;
+      html += '<div class="cal-hour" style="left:' + pct + '%"></div>';
+      if (h < 24) {
+        html += '<div class="cal-hour-label" style="left:' + pct + '%">' + h + '</div>';
+      }
+    }
+    for (const ev of days[key]) {
+      const start = Math.max(ev.start_ts, dayStart);
+      const end = ev.end_ts ? Math.min(ev.end_ts, dayEnd) : Math.min(Date.now(), dayEnd);
+      const leftPct = ((start - dayStart) / 86400000) * 100;
+      const widthPct = ((end - start) / 86400000) * 100;
+      const d = ev.details ? JSON.parse(ev.details) : {};
+      if (ev.kind === "diaper") {
+        const cls = d.diaper_type || "pee";
+        html += '<div class="cal-dot ' + cls + '" style="left:' + leftPct + '%" onclick="openEdit(' + ev.id + ')"></div>';
+      } else {
+        const openCls = ev.end_ts === null ? " open" : "";
+        html += '<div class="cal-block ' + ev.kind + openCls + '" style="left:' + leftPct + '%;width:' + Math.max(widthPct, 0.3) + '%" onclick="openEdit(' + ev.id + ')"></div>';
+      }
+    }
+    html += '</div></div>';
+  }
+  return html;
+}
+
+function openEdit(id) {
+  const ev = currentEvents.find((e) => e.id === id);
+  if (!ev) return;
+  const d = ev.details ? JSON.parse(ev.details) : {};
+  const modal = document.getElementById("modal");
+  let fields = '<div class="modal-row"><label>Start</label><input id="ed-start" type="datetime-local" value="' + tsToLocalInput(ev.start_ts) + '"></div>';
+  if (ev.kind !== "diaper") {
+    fields += '<div class="modal-row"><label>End</label><input id="ed-end" type="datetime-local" value="' + (ev.end_ts ? tsToLocalInput(ev.end_ts) : '') + '"></div>';
+  }
+  if (ev.kind === "feed") {
+    fields += '<div class="modal-row"><label>Side</label><select id="ed-side">' +
+      ['left', 'right', 'bottle'].map(s => '<option value="' + s + '"' + (d.side === s ? ' selected' : '') + '>' + s + '</option>').join('') +
+      '</select></div>';
+    fields += '<div class="modal-row"><label>Ounces (if bottle)</label><input id="ed-oz" type="number" step="0.5" min="0" value="' + (d.bottle_oz || '') + '"></div>';
+  }
+  if (ev.kind === "diaper") {
+    fields += '<div class="modal-row"><label>Type</label><select id="ed-type">' +
+      ['pee', 'poop', 'both'].map(s => '<option value="' + s + '"' + (d.diaper_type === s ? ' selected' : '') + '>' + s + '</option>').join('') +
+      '</select></div>';
+  }
+  modal.innerHTML = '<div class="modal"><h2>Edit ' + ev.kind + '</h2>' + fields +
+    '<div class="modal-actions">' +
+    '<button class="btn-cancel" onclick="closeModal()">Cancel</button>' +
+    '<button class="btn-delete" onclick="deleteEvent(' + id + ')">Delete</button>' +
+    '<button class="btn-save" onclick="saveEdit(' + id + ',\\'' + ev.kind + '\\')">Save</button>' +
+    '</div></div>';
+  modal.classList.add("show");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("show");
+}
+
+async function saveEdit(id, kind) {
+  const ev = currentEvents.find((e) => e.id === id);
+  if (!ev) return;
+  const patch = { details: ev.details ? JSON.parse(ev.details) : {} };
+  const startEl = document.getElementById("ed-start");
+  if (startEl && startEl.value) patch.start_ts = localInputToTs(startEl.value);
+  const endEl = document.getElementById("ed-end");
+  if (endEl) patch.end_ts = endEl.value ? localInputToTs(endEl.value) : null;
+  if (kind === "feed") {
+    const side = document.getElementById("ed-side").value;
+    const oz = parseFloat(document.getElementById("ed-oz").value);
+    patch.details = { side };
+    if (!isNaN(oz) && oz > 0) patch.details.bottle_oz = oz;
+  } else if (kind === "diaper") {
+    patch.details = { diaper_type: document.getElementById("ed-type").value };
+    patch.end_ts = patch.start_ts;
+  }
+  try {
+    const r = await api("/api/events/" + id, { method: "POST", body: JSON.stringify(patch) });
+    if (!r.ok) throw new Error("save failed");
+    closeModal();
+    showToast("saved");
+    load();
+  } catch (e) { showToast("error: " + e.message); }
 }
 
 async function endEvent(id) {
-  await api("/api/events/" + id, {
-    method: "POST",
-    body: JSON.stringify({ end_ts: Date.now() })
-  });
-  load();
+  try {
+    await api("/api/events/" + id, {
+      method: "POST",
+      body: JSON.stringify({ end_ts: Date.now() })
+    });
+    load();
+  } catch (e) { showToast("error: " + e.message); }
 }
 
 async function deleteEvent(id) {
   if (!confirm("Delete this event?")) return;
-  await api("/api/events/" + id, { method: "DELETE" });
+  try {
+    await api("/api/events/" + id, { method: "DELETE" });
+    closeModal();
+    load();
+  } catch (e) { showToast("error: " + e.message); }
+}
+
+if (!token) {
+  promptToken();
+} else {
+  renderShell();
   load();
 }
 
-load();
-setInterval(() => { if (token) load(); }, 30000);
+setInterval(() => {
+  if (!token) return;
+  if (document.visibilityState !== "visible") return;
+  const input = document.getElementById("freetext");
+  if (input && input === document.activeElement) return;
+  if (document.getElementById("modal").classList.contains("show")) return;
+  load();
+}, 30000);
 </script>
 </body>
 </html>`;
