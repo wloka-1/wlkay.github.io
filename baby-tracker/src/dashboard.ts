@@ -53,6 +53,27 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .total .num { font-size: 22px; font-weight: 600; }
   .total .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
+  .text-input {
+    display: flex; gap: 8px; margin-bottom: 6px;
+  }
+  .text-input input {
+    flex: 1; padding: 12px; font-size: 16px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--card); color: var(--ink);
+  }
+  .text-input button {
+    padding: 0 16px; background: var(--accent); color: #fff; border: none;
+    border-radius: 10px; font-weight: 600; cursor: pointer;
+  }
+  .hint { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 16px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 10;
+    max-width: calc(100vw - 32px); text-align: center;
+  }
+  .toast.show { opacity: 0.92; }
+
   .in-progress {
     background: var(--open); color: #fff; padding: 12px 16px; border-radius: 10px;
     margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;
@@ -109,6 +130,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 <main id="main">
   <div class="empty">loading\u2026</div>
 </main>
+<div id="toast" class="toast"></div>
 <script>
 const TOKEN_KEY = "baby-tracker-token";
 let token = localStorage.getItem(TOKEN_KEY) || "";
@@ -164,6 +186,29 @@ async function api(path, opts) {
   return res;
 }
 
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+async function submitText() {
+  const input = document.getElementById("freetext");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  try {
+    const r = await api("/log", { method: "POST", body: JSON.stringify({ text }) });
+    const data = await r.json();
+    if (data.ok) showToast(data.message || "logged");
+    else showToast("error: " + (data.error || "unknown"));
+    load();
+  } catch (e) { showToast("error: " + e.message); }
+}
+
 async function load() {
   if (!token) { promptToken(); return; }
   let events;
@@ -186,14 +231,17 @@ async function load() {
     .filter(e => e.kind === "sleep" && e.end_ts)
     .reduce((s, e) => s + (e.end_ts - e.start_ts), 0);
 
-  let html = '<div class="totals">' +
+  let html = '<div class="text-input">' +
+    '<input id="freetext" type="text" placeholder="type or dictate, e.g. \\'she just pooped\\'" ' +
+    'autocomplete="off" autocapitalize="none" onkeydown="if(event.key===\\'Enter\\')submitText()">' +
+    '<button onclick="submitText()">log</button></div>' +
+    '<div class="hint">tap the \u{1F3A4} mic key on your keyboard to dictate</div>';
+
+  html += '<div class="totals">' +
     '<div class="total"><div class="num">' + feedCount + '</div><div class="label">feeds' + (feedOz ? ' \u00b7 ' + feedOz + 'oz' : '') + '</div></div>' +
     '<div class="total"><div class="num">' + diaperCount + '</div><div class="label">diapers</div></div>' +
     '<div class="total"><div class="num">' + (sleepMs ? fmtDur(sleepMs) : "0m") + '</div><div class="label">sleep</div></div>' +
     '</div>';
-
-  const shortcutUrl = "/shortcut?t=" + encodeURIComponent(token);
-  html += '<div style="text-align:center;margin-bottom:16px;font-size:13px;"><a href="' + shortcutUrl + '" style="color:var(--accent)">\u{1F4F2} install iOS shortcut</a></div>';
 
   const openEvent = events.find(e => e.end_ts === null);
   if (openEvent) {
