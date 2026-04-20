@@ -67,7 +67,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .total .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
   .quick-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
   }
   .qbtn {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -363,7 +363,6 @@ function bottlePrompt() {
 
 function renderQuickAndBanner() {
   const openFeed = currentEvents.find(e => e.kind === "feed" && e.end_ts === null);
-  const openSleep = currentEvents.find(e => e.kind === "sleep" && e.end_ts === null);
 
   const btn = (emoji, label, action, disabled) =>
     '<button class="qbtn"' + (disabled ? ' disabled' : '') + ' onclick="' + action + '">' +
@@ -372,18 +371,15 @@ function renderQuickAndBanner() {
   const row1 =
     btn('\u{1F4A7}', 'pee', "quickLog('/pee')") +
     btn('\u{1F4A9}', 'poop', "quickLog('/poop')") +
-    btn('\u{1F4A7}\u{1F4A9}', 'both', "quickLog('/diaper both')") +
-    (openSleep
-      ? btn('\u2600\uFE0F', 'wake', "quickLog('/sleep end')")
-      : btn('\u{1F634}', 'sleep', "quickLog('/sleep start')"));
+    btn('\u{1F4A7}\u{1F4A9}', 'both', "quickLog('/diaper both')");
 
-  const row2 =
-    btn('\u{1F938}', 'feed L', "quickLog('/feed start left')", !!openFeed) +
-    btn('\u{1F93C}', 'feed R', "quickLog('/feed start right')", !!openFeed) +
-    btn('\u{1F37C}', 'bottle', "bottlePrompt()", !!openFeed) +
-    (openFeed
-      ? btn('\u2713', 'end feed', "quickLog('/feed end')")
-      : btn('\u{1F4AC}', 'other', "document.getElementById('freetext').focus()"));
+  const row2 = openFeed
+    ? btn('\u{1F448}', 'feed L', "quickLog('/feed start left')", true) +
+      btn('\u{1F449}', 'feed R', "quickLog('/feed start right')", true) +
+      btn('\u2713', 'end feed', "quickLog('/feed end')")
+    : btn('\u{1F448}', 'feed L', "quickLog('/feed start left')") +
+      btn('\u{1F449}', 'feed R', "quickLog('/feed start right')") +
+      btn('\u{1F37C}', 'bottle', "bottlePrompt()");
 
   document.getElementById("quick-container").innerHTML =
     '<div class="quick-grid">' + row1 + '</div>' +
@@ -468,7 +464,15 @@ function renderCalendar() {
         html += '<div class="cal-dot ' + cls + '" style="left:' + leftPct + '%" onclick="openEdit(' + ev.id + ')"></div>';
       } else {
         const openCls = ev.end_ts === null ? " open" : "";
-        html += '<div class="cal-block ' + ev.kind + openCls + '" style="left:' + leftPct + '%;width:' + Math.max(widthPct, 0.3) + '%" onclick="openEdit(' + ev.id + ')"></div>';
+        let heightStyle = "";
+        if (ev.kind === "feed") {
+          const durMin = (end - start) / 60000;
+          const ratio = Math.min(durMin / 30, 1);
+          const maxH = 26;
+          const h = Math.max(ratio * maxH, 4);
+          heightStyle = ";top:" + (40 - h) + "px;bottom:4px";
+        }
+        html += '<div class="cal-block ' + ev.kind + openCls + '" style="left:' + leftPct + '%;width:' + Math.max(widthPct, 0.3) + '%' + heightStyle + '" onclick="openEdit(' + ev.id + ')"></div>';
       }
     }
     html += '</div></div>';
