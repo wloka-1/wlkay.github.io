@@ -66,6 +66,18 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   .total .num { font-size: 22px; font-weight: 600; }
   .total .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
+  .quick-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;
+  }
+  .qbtn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 4px; text-align: center; cursor: pointer; color: var(--ink);
+    font-size: 12px; font-weight: 500; -webkit-tap-highlight-color: transparent;
+  }
+  .qbtn:active { background: var(--border); }
+  .qbtn .emoji { font-size: 20px; display: block; margin-bottom: 2px; line-height: 1; }
+  .qbtn[disabled] { opacity: 0.3; pointer-events: none; }
+
   .in-progress {
     background: var(--open); color: #fff; padding: 12px 16px; border-radius: 10px;
     margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;
@@ -228,8 +240,8 @@ function renderShell() {
       <button onclick="submitText()">log</button>
     </div>
     <div class="hint">tap the \u{1F3A4} mic key on your keyboard to dictate</div>
+    <div id="quick-container"></div>
     <div id="in-progress-container"></div>
-    <div id="totals-container"></div>
     <div class="view-toggle">
       <button id="v-list" onclick="setView('list')">list</button>
       <button id="v-cal" onclick="setView('calendar')">calendar</button>
@@ -327,26 +339,55 @@ async function load() {
     document.getElementById("events-container").innerHTML = '<div class="empty">error: ' + e.message + '</div>';
     return;
   }
-  renderTotalsAndBanner();
+  renderQuickAndBanner();
   renderEvents();
 }
 
-function renderTotalsAndBanner() {
-  const todays = currentEvents.filter(e => isToday(e.start_ts));
-  const feedCount = todays.filter(e => e.kind === "feed").length;
-  const feedOz = todays
-    .filter(e => e.kind === "feed")
-    .reduce((s, e) => s + ((e.details && JSON.parse(e.details).bottle_oz) || 0), 0);
-  const diaperCount = todays.filter(e => e.kind === "diaper").length;
-  const sleepMs = todays
-    .filter(e => e.kind === "sleep" && e.end_ts)
-    .reduce((s, e) => s + (e.end_ts - e.start_ts), 0);
+async function quickLog(text) {
+  try {
+    const r = await api("/log", { method: "POST", body: JSON.stringify({ text }) });
+    const data = await r.json();
+    if (data.ok) showToast(data.message || "logged");
+    else showToast("error: " + (data.error || "unknown"));
+    load();
+  } catch (e) { showToast("error: " + e.message); }
+}
 
-  document.getElementById("totals-container").innerHTML = '<div class="totals">' +
-    '<div class="total"><div class="num">' + feedCount + '</div><div class="label">feeds' + (feedOz ? ' \u00b7 ' + feedOz + 'oz' : '') + '</div></div>' +
-    '<div class="total"><div class="num">' + diaperCount + '</div><div class="label">diapers</div></div>' +
-    '<div class="total"><div class="num">' + (sleepMs ? fmtDur(sleepMs) : "0m") + '</div><div class="label">sleep</div></div>' +
-    '</div>';
+function bottlePrompt() {
+  const oz = prompt("Bottle ounces?", "3");
+  if (oz === null) return;
+  const num = parseFloat(oz);
+  if (isNaN(num) || num <= 0) { showToast("invalid number"); return; }
+  quickLog("/feed start bottle " + num);
+}
+
+function renderQuickAndBanner() {
+  const openFeed = currentEvents.find(e => e.kind === "feed" && e.end_ts === null);
+  const openSleep = currentEvents.find(e => e.kind === "sleep" && e.end_ts === null);
+
+  const btn = (emoji, label, action, disabled) =>
+    '<button class="qbtn"' + (disabled ? ' disabled' : '') + ' onclick="' + action + '">' +
+    '<span class="emoji">' + emoji + '</span>' + label + '</button>';
+
+  const row1 =
+    btn('\u{1F4A7}', 'pee', "quickLog('/pee')") +
+    btn('\u{1F4A9}', 'poop', "quickLog('/poop')") +
+    btn('\u{1F4A7}\u{1F4A9}', 'both', "quickLog('/diaper both')") +
+    (openSleep
+      ? btn('\u2600\uFE0F', 'wake', "quickLog('/sleep end')")
+      : btn('\u{1F634}', 'sleep', "quickLog('/sleep start')"));
+
+  const row2 =
+    btn('\u{1F938}', 'feed L', "quickLog('/feed start left')", !!openFeed) +
+    btn('\u{1F93C}', 'feed R', "quickLog('/feed start right')", !!openFeed) +
+    btn('\u{1F37C}', 'bottle', "bottlePrompt()", !!openFeed) +
+    (openFeed
+      ? btn('\u2713', 'end feed', "quickLog('/feed end')")
+      : btn('\u{1F4AC}', 'other', "document.getElementById('freetext').focus()"));
+
+  document.getElementById("quick-container").innerHTML =
+    '<div class="quick-grid">' + row1 + '</div>' +
+    '<div class="quick-grid">' + row2 + '</div>';
 
   const openEvent = currentEvents.find(e => e.end_ts === null);
   const banner = document.getElementById("in-progress-container");
