@@ -1,4 +1,4 @@
-export type EventKind = "feed" | "diaper" | "sleep";
+export type EventKind = "feed" | "diaper" | "sleep" | "med";
 
 export interface EventRow {
   id: number;
@@ -14,6 +14,8 @@ export interface EventDetails {
   side?: "left" | "right" | "bottle";
   bottle_oz?: number;
   diaper_type?: "pee" | "poop" | "both";
+  med_name?: "tylenol" | "ibuprofen" | "oxy";
+  dose_mg?: number;
   note?: string;
 }
 

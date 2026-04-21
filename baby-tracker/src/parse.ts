@@ -32,12 +32,20 @@ export interface ParsedSleepEnd {
   end_ts_offset_min: number;
 }
 
+export interface ParsedMed {
+  kind: "med";
+  med_name: "tylenol" | "ibuprofen" | "oxy";
+  dose_mg?: number;
+  start_ts_offset_min: number;
+}
+
 export type Parsed =
   | ParsedFeedStart
   | ParsedFeedEnd
   | ParsedDiaper
   | ParsedSleepStart
-  | ParsedSleepEnd;
+  | ParsedSleepEnd
+  | ParsedMed;
 
 export interface ParseError {
   error: string;
@@ -83,17 +91,26 @@ export function parseCommand(text: string): Parsed | null {
   if (/^\/?sleep\s+end\b/.test(t) || /^\/?wake\b/.test(t))
     return { kind: "sleep", action: "end", end_ts_offset_min: 0 };
 
+  if (/^\/?(tylenol|acetaminophen)\b/.test(t))
+    return { kind: "med", med_name: "tylenol", dose_mg: 500, start_ts_offset_min: 0 };
+  if (/^\/?(ibuprofen|advil|motrin)\b/.test(t))
+    return { kind: "med", med_name: "ibuprofen", dose_mg: 600, start_ts_offset_min: 0 };
+  if (/^\/?(oxy|oxycodone|percocet)\b/.test(t))
+    return { kind: "med", med_name: "oxy", start_ts_offset_min: 0 };
+
   return null;
 }
 
 const PARSE_SCHEMA = {
   type: "object",
   properties: {
-    kind: { type: "string", enum: ["feed", "diaper", "sleep", "error"] },
+    kind: { type: "string", enum: ["feed", "diaper", "sleep", "med", "error"] },
     action: { type: "string", enum: ["start", "end"] },
     side: { type: "string", enum: ["left", "right", "bottle"] },
     bottle_oz: { type: "number" },
     diaper_type: { type: "string", enum: ["pee", "poop", "both"] },
+    med_name: { type: "string", enum: ["tylenol", "ibuprofen", "oxy"] },
+    dose_mg: { type: "number" },
     start_ts_offset_min: { type: "number" },
     end_ts_offset_min: { type: "number" },
     error: { type: "string" },
@@ -102,7 +119,7 @@ const PARSE_SCHEMA = {
   additionalProperties: false,
 };
 
-const SYSTEM_PROMPT = `You parse short messages a parent types about their newborn baby into structured JSON events.
+const SYSTEM_PROMPT = `You parse short messages from parents into structured JSON events. Events can be about a newborn baby OR about the mom's postpartum medications.
 
 Output shapes (pick ONE based on intent):
 - Diaper: {"kind":"diaper","diaper_type":"pee"|"poop"|"both","start_ts_offset_min":N}
@@ -111,12 +128,15 @@ Output shapes (pick ONE based on intent):
 - Feed end: {"kind":"feed","action":"end","end_ts_offset_min":N}
 - Sleep start: {"kind":"sleep","action":"start","start_ts_offset_min":N}
 - Sleep end: {"kind":"sleep","action":"end","end_ts_offset_min":N}
+- Medication: {"kind":"med","med_name":"tylenol"|"ibuprofen"|"oxy","dose_mg":N,"start_ts_offset_min":N}
+  (tylenol default 500mg; ibuprofen/advil/motrin default 600mg; oxy/oxycodone/percocet omit dose_mg)
 - Unparseable: {"kind":"error","error":"reason"}
 
 Offsets are MINUTES relative to now. "6 min ago" -> -6. "just now" or omitted -> 0.
 "done", "finished", "wake up" usually mean ending the current open event.
 If ambiguous whether a feed is starting or ending, pick based on words like "starting"/"started" (start) vs "done"/"finished"/"ended" (end).
 Breast: "left" or "right"; bottle: parse ounces from numbers like "4oz", "3.5 oz", "2 ounces".
+"took tylenol" -> med tylenol. "advil now" -> med ibuprofen. Assume dose only if user says it.
 
 Return JSON only, no prose.`;
 
@@ -188,6 +208,10 @@ export function describeForSiri(
   }
   if (kind === "sleep") {
     return action === "end" ? `Ended sleep at ${time}` : `Started sleep at ${time}`;
+  }
+  if (kind === "med") {
+    const dose = details.dose_mg ? ` ${details.dose_mg}mg` : "";
+    return `Logged ${details.med_name ?? "med"}${dose} at ${time}`;
   }
   return `Logged at ${time}`;
 }
