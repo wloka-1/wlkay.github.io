@@ -127,6 +127,18 @@ async function handleLog(req: Request, env: Env): Promise<Response> {
     });
   }
 
+  if (parsed.kind === "med") {
+    const ts = now + offsetMsFromMinutes(parsed.start_ts_offset_min);
+    const details: EventDetails = { med_name: parsed.med_name };
+    if (parsed.dose_mg !== undefined) details.dose_mg = parsed.dose_mg;
+    const id = await insertEvent(env.DB, "med", ts, ts, details, "shortcut");
+    return json({
+      ok: true,
+      id,
+      message: describeForSiri("med", details, ts),
+    });
+  }
+
   return json({ ok: false, error: "unhandled parse result" }, 500);
 }
 
